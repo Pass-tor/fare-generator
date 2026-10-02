@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Angkas Fare Calculator</title>
+<meta name="theme-color" content="#1A4D8F">
+<meta name="description" content="Estimate Angkas fares in Manila with live route distance and ride tracking.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&family=DM+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#EEF2F8;--card:#fff;--ink:#14213A;--mute:#5F6B82;--line:#DCE3EE;--brand:#1A4D8F;--brand-ink:#fff;--soft:#E4ECF8;--paper:#FFFDF6;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0C1424;--card:#141E33;--ink:#E8EDF7;--mute:#97A3BB;--line:#26324D;--brand:#5B9AF0;--brand-ink:#0C1424;--soft:#1C2A47;--paper:#1A2339}}
+:root[data-theme="dark"]{--bg:#0C1424;--card:#141E33;--ink:#E8EDF7;--mute:#97A3BB;--line:#26324D;--brand:#5B9AF0;--brand-ink:#0C1424;--soft:#1C2A47;--paper:#1A2339}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.45 "Bricolage Grotesque",system-ui,sans-serif}
+main{max-width:480px;margin:0 auto;padding:16px 16px 40px;display:grid;gap:14px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+header{display:flex;justify-content:space-between;align-items:center}
+h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em}
+h1 small{display:block;font-size:13px;font-weight:400;color:var(--mute);letter-spacing:0}
+.icon{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--card);font-size:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px}
+h2{margin:0 0 10px;font-size:15px;font-weight:600;color:var(--mute)}
+.dist{display:grid;grid-template-columns:52px 1fr 52px;gap:10px;align-items:center}
+.step{height:52px;border-radius:14px;border:1px solid var(--line);background:var(--card);font-size:24px;font-weight:600}
+.step:active{transform:scale(.95)}
+.numwrap{position:relative}
+.numwrap input{width:100%;height:52px;border-radius:14px;border:1px solid var(--line);background:var(--bg);color:var(--ink);text-align:center;font:800 28px "Bricolage Grotesque",sans-serif;padding-right:36px}
+.numwrap span{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--mute);font-weight:600;font-size:13px}
+input[type=range]{width:100%;margin:14px 0 4px;accent-color:var(--brand)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-weight:600;font-size:14px}
+.chip[aria-pressed=true]{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.err{color:#C0392B;font-size:13px;min-height:18px;margin:6px 0 0}
+.tog{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:12px 0;border:0;border-top:1px solid var(--line);background:none;text-align:left}
+.tog:first-of-type{border-top:0}
+.tog b{display:block;font-weight:600}.tog small{color:var(--mute);font-size:13px}
+.sw{flex:none;width:46px;height:26px;border-radius:99px;background:var(--line);position:relative;transition:background .15s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .15s}
+.tog[aria-pressed=true] .sw{background:var(--brand)}
+.tog[aria-pressed=true] .sw::after{transform:translateX(20px)}
+.receipt{background:var(--paper);border:1px solid var(--line);border-radius:6px 6px 0 0;padding:18px 18px 22px;position:relative;font-family:"DM Mono",ui-monospace,monospace;font-size:14px}
+.receipt::after{content:"";position:absolute;left:-1px;right:-1px;bottom:-9px;height:10px;background:linear-gradient(-45deg,transparent 7px,var(--paper) 0) 0 0/14px 10px,linear-gradient(45deg,transparent 7px,var(--paper) 0) 0 0/14px 10px;-webkit-mask:none}
+.rhead{display:flex;justify-content:space-between;color:var(--mute);font-size:12px;margin-bottom:10px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:3px 0}
+.row span:first-child{color:var(--mute)}
+.rule{border-top:1px dashed var(--mute);opacity:.5;margin:10px 0}
+.total{display:flex;justify-content:space-between;align-items:baseline}
+.total b{font:800 40px/1 "Bricolage Grotesque",sans-serif;letter-spacing:-.03em;color:var(--brand)}
+.total span{font-weight:500}
+.actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:18px}
+.btn{height:46px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-weight:600;font-size:14px}
+.btn.primary{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.hist{display:grid;gap:8px}
+.hist button{display:flex;justify-content:space-between;align-items:center;width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);text-align:left}
+.hist small{color:var(--mute)}
+.empty{color:var(--mute);margin:0;font-size:14px}
+.link{border:0;background:none;color:var(--brand);font-weight:600;padding:0}
+details summary{cursor:pointer;font-weight:600}
+details p{margin:10px 0 0;font-family:"DM Mono",monospace;font-size:13px;color:var(--mute)}
+.fine{color:var(--mute);font-size:12px;text-align:center;margin:4px 0 0}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:99px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:.2s}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.field{width:100%;height:46px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;padding:0 14px}
+.ac{position:relative}
+.sugg{position:absolute;z-index:20;left:0;right:0;top:calc(100% + 4px);margin:0;padding:4px;list-style:none;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.2);max-height:264px;overflow:auto}
+.sugg[hidden]{display:none}
+.sugg li{padding:10px 12px;border-radius:8px;cursor:pointer}
+.sugg li[aria-selected=true],.sugg li:hover{background:var(--soft)}
+.sugg b{display:block;font-weight:600;font-size:15px}
+.sugg small{color:var(--mute);font-size:12px}
+.pane{display:grid;gap:8px;margin-top:12px}.pane[hidden]{display:none}
+.pair{display:grid;grid-template-columns:1fr 46px;gap:8px}.pair2{display:grid;grid-template-columns:2fr 1fr;gap:8px}
+.odo{font:800 36px/1 "Bricolage Grotesque",sans-serif;text-align:center;padding:10px 0;letter-spacing:-.02em}
+.note{color:var(--mute);font-size:13px;margin:10px 0 0;min-height:18px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Angkas Fare<small>Fare estimate, calculated on your device</small></h1>
+  <button class="icon" id="theme" aria-label="Toggle theme">◐</button>
+</header>
+
+<section class="card">
+  <h2>Get distance automatically</h2>
+  <div class="chips" id="modes">
+    <button class="chip" data-mode="route" aria-pressed="true">Route</button>
+    <button class="chip" data-mode="track" aria-pressed="false">Track ride</button>
+  </div>
+  <div id="pane-route" class="pane">
+    <div class="pair"><div class="ac"><input class="field" id="from" placeholder="Pickup" autocomplete="off" aria-label="Pickup" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sg-from"><ul class="sugg" id="sg-from" role="listbox" hidden></ul></div><button class="btn" id="locate" aria-label="Use my location">📍</button></div>
+    <div class="ac"><input class="field" id="to" placeholder="Drop-off" autocomplete="off" aria-label="Drop-off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sg-to"><ul class="sugg" id="sg-to" role="listbox" hidden></ul></div>
+    <button class="btn primary" id="go">Get route distance</button>
+  </div>
+  <div id="pane-track" class="pane" hidden>
+    <div class="odo" id="trk">0.00 km</div>
+    <div class="pair2"><button class="btn primary" id="trkbtn">Start tracking</button><button class="btn" id="trkreset">Reset</button></div>
+  </div>
+  <p class="note" id="status" aria-live="polite">The distance fills in below and the fare updates.</p>
+</section>
+
+<section class="card">
+  <h2>How far is the trip?</h2>
+  <div class="dist">
+    <button class="step" id="minus" aria-label="Decrease by 0.5 km">−</button>
+    <div class="numwrap"><input id="km" inputmode="decimal" autocomplete="off" aria-label="Distance in kilometers"><span>km</span></div>
+    <button class="step" id="plus" aria-label="Increase by 0.5 km">+</button>
+  </div>
+  <input type="range" id="range" min="0.5" max="30" step="0.5" aria-label="Distance slider">
+  <div class="chips" id="quick"></div>
+  <p class="err" id="err" role="alert"></p>
+</section>
+
+<section class="card">
+  <h2>Surge</h2>
+  <div class="chips" id="surge"></div>
+  <h2 style="margin-top:16px">Extra charges</h2>
+  <button class="tog" data-fee="night" aria-pressed="false"><span><b>Night charge</b><small>10PM–5AM · +₱20</small></span><i class="sw"></i></button>
+  <button class="tog" data-fee="rain" aria-pressed="false"><span><b>Rainy</b><small>Wet roads · +₱10</small></span><i class="sw"></i></button>
+  <button class="tog" data-fee="booking" aria-pressed="true"><span><b>Booking fee</b><small>Platform fee · +₱5</small></span><i class="sw"></i></button>
+</section>
+
+<section aria-live="polite">
+  <div class="receipt" id="receipt"></div>
+  <div class="actions">
+    <button class="btn primary" id="save">Save</button>
+    <button class="btn" id="copy">Copy</button>
+    <button class="btn" id="share">Share</button>
+  </div>
+</section>
+
+<section class="card" style="margin-top:8px">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <h2 style="margin:0">Saved trips</h2>
+    <button class="link" id="clear" hidden>Clear all</button>
+  </div>
+  <div class="hist" id="hist" style="margin-top:10px"></div>
+</section>
+
+<section class="card">
+  <details>
+    <summary>How it's calculated</summary>
+    <p><b>Manila</b><br>₱50 for the first 2 km · +₱10/km up to 7 km · +₱15/km after<br>Example: 10 km = 50 + 50 + 45 = ₱145</p>
+    <p>Total = (subtotal × surge) + extra charges.</p>
+  </details>
+</section>
+<p class="fine">Not an official Angkas app. Estimates only. Ride safe!<br>Route data © OpenStreetMap contributors.</p>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+var RATES={manila:{base:50,baseKm:2,baseLabel:"First 2 km",t1:{to:7,rate:10},t2:{rate:15}}};
+var FEES={night:20,rain:10,booking:5};
+var SURGES=[[1,"None"],[1.2,"1.2×"],[1.5,"1.5×"],[2,"2×"]];
+var QUICK=[1,2,5,10,15,20];
+var MIN=0.5,MAX=100;
+var s={city:"manila",km:3.5,surge:1,night:false,rain:false,booking:true,theme:null,hist:[]};
+var h=new Date().getHours(); if(h>=22||h<5) s.night=true;
+
+function load(){try{var d=JSON.parse(localStorage.getItem("angkas-fare")||"null");if(d){
+  if(d.theme)s.theme=d.theme;
+  if(Array.isArray(d.hist))s.hist=d.hist.filter(function(x){return x.city==="manila"}).slice(0,20);}}catch(e){}}
+function persist(){try{localStorage.setItem("angkas-fare",JSON.stringify({theme:s.theme,hist:s.hist}))}catch(e){}}
+var $=function(id){return document.getElementById(id)};
+var peso=function(n){return "₱"+n.toLocaleString("en-PH",{minimumFractionDigits:2,maximumFractionDigits:2})};
+
+function calc(){
+  var r=RATES[s.city],km=s.km,t1=0,t2=0;
+  if(km>r.baseKm)t1=Math.min(km,r.t1.to)-r.baseKm;
+  if(km>r.t1.to)t2=km-r.t1.to;
+  var a1=t1*r.t1.rate,a2=t2*r.t2.rate,sub=r.base+a1+a2,surged=sub*s.surge;
+  var fees=[];
+  if(s.night)fees.push(["Night charge",FEES.night]);
+  if(s.rain)fees.push(["Rainy",FEES.rain]);
+  if(s.booking)fees.push(["Booking fee",FEES.booking]);
+  var total=Math.round((surged+fees.reduce(function(a,f){return a+f[1]},0))*100)/100;
+  return {r:r,t1:t1,t2:t2,a1:a1,a2:a2,sub:sub,surged:surged,fees:fees,total:total};
+}
+function lines(c){
+  var L=[[c.r.baseLabel,c.r.base]];
+  if(c.t1>0)L.push([c.t1.toFixed(1)+"km × ₱"+c.r.t1.rate,c.a1]);
+  if(c.t2>0)L.push([c.t2.toFixed(1)+"km × ₱"+c.r.t2.rate,c.a2]);
+  if(s.surge!==1)L.push(["Surge "+s.surge+"× (on "+peso(c.sub)+")",c.surged-c.sub]);
+  c.fees.forEach(function(f){L.push([f[0],f[1]])});
+  return L;
+}
+function render(){
+  var c=calc(),city="Manila";
+  var rows=lines(c).map(function(l){return '<div class="row"><span>'+l[0]+'</span><span>'+peso(l[1])+'</span></div>'}).join("");
+  $("receipt").innerHTML='<div class="rhead"><span>'+city+' · '+s.km+' km</span><span>AMOUNT DUE</span></div>'+rows+
+    '<div class="rule"></div><div class="total"><span>Total</span><b>'+peso(c.total)+'</b></div>';
+  document.querySelectorAll("[data-fee]").forEach(function(b){b.setAttribute("aria-pressed",!!s[b.dataset.fee])});
+  document.querySelectorAll("[data-surge]").forEach(function(b){b.setAttribute("aria-pressed",+b.dataset.surge===s.surge)});
+  document.querySelectorAll("[data-q]").forEach(function(b){b.setAttribute("aria-pressed",+b.dataset.q===s.km)});
+  $("range").value=Math.min(s.km,30);
+  if(document.activeElement!==$("km"))$("km").value=s.km;
+}
+function receiptText(){
+  var c=calc(),d=new Date();
+  var out=["🛵 ANGKAS FARE ESTIMATE","━━━━━━━━━━━━━━━━",
+    "City: "+"Manila","Distance: "+s.km+" km",
+    "Date: "+d.toLocaleDateString("en-PH")+" "+d.toLocaleTimeString("en-PH",{hour:"2-digit",minute:"2-digit"}),"",
+    ].concat(lines(c).map(function(l){return l[0]+": "+peso(l[1])}),["━━━━━━━━━━━━━━━━","TOTAL: "+peso(c.total)]);
+  return out.join("\n");
+}
+function toast(m){var t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(function(){t.classList.remove("on")},1800)}
+function setKm(v){v=Math.round(v*2)/2;s.km=Math.min(MAX,Math.max(MIN,v));$("err").textContent="";render()}
+
+function renderHist(){
+  var el=$("hist");$("clear").hidden=!s.hist.length;
+  if(!s.hist.length){el.innerHTML='<p class="empty">Nothing saved yet. Tap “Save” to keep a trip and reuse it later.</p>';return}
+  el.innerHTML=s.hist.map(function(x,i){
+    return '<button data-i="'+i+'"><span><b>'+peso(x.total)+'</b><br><small>'+x.km+' km · '+new Date(x.t).toLocaleTimeString("en-PH",{hour:"2-digit",minute:"2-digit"})+'</small></span><small>Reuse</small></button>'}).join("");
+}
+function applyTheme(){var r=document.documentElement;if(s.theme)r.setAttribute("data-theme",s.theme);else r.removeAttribute("data-theme")}
+
+load();applyTheme();
+$("quick").innerHTML=QUICK.map(function(q){return '<button class="chip" data-q="'+q+'" aria-pressed="false">'+q+' km</button>'}).join("");
+$("surge").innerHTML=SURGES.map(function(x){return '<button class="chip" data-surge="'+x[0]+'" aria-pressed="false">'+x[1]+'</button>'}).join("");
+
+document.querySelectorAll("[data-fee]").forEach(function(b){b.onclick=function(){s[b.dataset.fee]=!s[b.dataset.fee];render()}});
+document.querySelectorAll("[data-surge]").forEach(function(b){b.onclick=function(){s.surge=+b.dataset.surge;render()}});
+document.querySelectorAll("[data-q]").forEach(function(b){b.onclick=function(){setKm(+b.dataset.q)}});
+$("minus").onclick=function(){setKm(s.km-0.5)};
+$("plus").onclick=function(){setKm(s.km+0.5)};
+$("range").oninput=function(){setKm(+this.value)};
+$("km").oninput=function(){
+  var v=parseFloat(this.value.replace(",","."));
+  if(this.value===""){$("err").textContent="Enter a distance.";return}
+  if(isNaN(v)||v<MIN||v>MAX){$("err").textContent="Enter 0.5 to 100 km.";return}
+  $("err").textContent="";s.km=Math.round(v*100)/100;render();
+};
+$("km").onblur=function(){this.value=s.km;$("err").textContent=""};
+$("save").onclick=function(){
+  s.hist.unshift({city:s.city,km:s.km,total:calc().total,surge:s.surge,night:s.night,rain:s.rain,booking:s.booking,t:Date.now()});
+  s.hist=s.hist.slice(0,20);persist();renderHist();toast("Trip saved");
+};
+$("copy").onclick=function(){
+  var t=receiptText();
+  function fb(){var a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");toast("Copied")}catch(e){toast("Couldn't copy")}document.body.removeChild(a)}
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){toast("Copied")},fb);else fb();
+};
+$("share").onclick=function(){
+  if(navigator.share)navigator.share({title:"Angkas Fare",text:receiptText()}).catch(function(){});else $("copy").click();
+};
+$("hist").onclick=function(e){
+  var b=e.target.closest("button");if(!b)return;var x=s.hist[+b.dataset.i];if(!x)return;
+  s.surge=x.surge||1;s.night=!!x.night;s.rain=!!x.rain;s.booking=x.booking!==false;setKm(x.km);window.scrollTo({top:0,behavior:"smooth"});
+};
+$("clear").onclick=function(){s.hist=[];persist();renderHist();toast("History cleared")};
+$("theme").onclick=function(){
+  var dark=s.theme?s.theme==="dark":matchMedia("(prefers-color-scheme: dark)").matches;
+  s.theme=dark?"light":"dark";applyTheme();persist();
+};
+
+function setKmExact(v){s.km=Math.min(MAX,Math.max(MIN,Math.round(v*100)/100));$("err").textContent="";render()}
+function status(m,bad){var e=$("status");e.textContent=m;e.style.color=bad?"#C0392B":""}
+var here=null,watchId=null,lock=null,trk={km:0,last:null};
+function getPos(){return new Promise(function(ok,no){
+  if(!navigator.geolocation)return no(new Error("Location isn't available on this device."));
+  navigator.geolocation.getCurrentPosition(ok,function(e){no(new Error(e.code===1?"Location is blocked. Allow it in your browser settings, or type the place.":"Couldn't get your location."))},{enableHighAccuracy:true,timeout:15000})})}
+async function geocode(q){
+  var r=await fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=ph&q="+encodeURIComponent(q));
+  if(!r.ok)throw new Error("Place search failed. Try again.");
+  var a=await r.json();
+  if(!a.length)throw new Error("Couldn't find “"+q+"”. Add a street or city.");
+  return {lat:+a[0].lat,lon:+a[0].lon};
+}
+$("from").oninput=function(){if(this.value!=="My location")here=null};
+$("locate").onclick=async function(){
+  status("Finding you…");
+  try{var p=await getPos();here={lat:p.coords.latitude,lon:p.coords.longitude};$("from").value="My location";status("Pickup set to your location.")}
+  catch(e){status(e.message,true)}
+};
+$("go").onclick=async function(){
+  var f=$("from").value.trim(),t=$("to").value.trim();
+  if(!f||!t)return status("Enter a pickup and a drop-off.",true);
+  if(!navigator.onLine)return status("You're offline. Enter the distance manually below.",true);
+  status("Finding route…");
+  try{
+    var a,b,waited=false;
+    if(f==="My location"&&here)a=here;
+    else if(picks.from)a=picks.from;
+    else{a=await geocode(f);waited=true}
+    if(picks.to)b=picks.to;
+    else{if(waited)await new Promise(function(r){setTimeout(r,1100)});b=await geocode(t)}
+    var r=await fetch("https://router.project-osrm.org/route/v1/driving/"+a.lon+","+a.lat+";"+b.lon+","+b.lat+"?overview=false");
+    var d=await r.json();
+    if(d.code!=="Ok"||!d.routes.length)throw new Error("No driving route found between those places.");
+    var km=d.routes[0].distance/1000;
+    setKmExact(Math.round(km*10)/10);
+    status("Route distance: "+km.toFixed(1)+" km by road. Traffic and detours may change the real distance.");
+  }catch(e){status(e.message||"Couldn't get the route.",true)}
+};
+function hav(a,b){var k=Math.PI/180,x=Math.sin((b.lat-a.lat)*k/2),y=Math.sin((b.lon-a.lon)*k/2);
+  return 12742*Math.asin(Math.sqrt(x*x+Math.cos(a.lat*k)*Math.cos(b.lat*k)*y*y))}
+function onPos(p){
+  if(p.coords.accuracy>50)return status("Waiting for a stronger GPS signal…");
+  var c={lat:p.coords.latitude,lon:p.coords.longitude};
+  if(trk.last){var d=hav(trk.last,c);if(d<0.01)return;trk.km+=d}
+  trk.last=c;$("trk").textContent=trk.km.toFixed(2)+" km";setKmExact(trk.km);
+  status("Tracking. Keep this screen on for best results.");
+}
+function startTrack(){
+  if(!navigator.geolocation)return status("Location isn't available on this device.",true);
+  trk.last=null;status("Getting GPS signal…");
+  watchId=navigator.geolocation.watchPosition(onPos,function(e){status(e.code===1?"Location is blocked. Allow it in your browser settings.":"Lost the GPS signal.",true);stopTrack()},{enableHighAccuracy:true,maximumAge:0,timeout:20000});
+  if(navigator.wakeLock)navigator.wakeLock.request("screen").then(function(l){lock=l}).catch(function(){});
+  $("trkbtn").textContent="Stop tracking";
+}
+function stopTrack(){
+  if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null}
+  if(lock){lock.release().catch(function(){});lock=null}
+  $("trkbtn").textContent="Start tracking";
+}
+$("trkbtn").onclick=function(){if(watchId===null)startTrack();else{stopTrack();status("Tracking stopped at "+trk.km.toFixed(2)+" km.")}};
+$("trkreset").onclick=function(){trk.km=0;trk.last=null;$("trk").textContent="0.00 km";status("Tracker reset.")};
+document.querySelectorAll("[data-mode]").forEach(function(b){b.onclick=function(){
+  var m=b.dataset.mode;
+  document.querySelectorAll("[data-mode]").forEach(function(x){x.setAttribute("aria-pressed",x===b)});
+  $("pane-route").hidden=m!=="route";$("pane-track").hidden=m!=="track";
+  if(m!=="track")stopTrack();
+}});
+var picks={from:null,to:null},MANILA={lat:14.5995,lon:120.9842};
+function esc(x){return String(x).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function suggest(id){
+  var inp=$(id),ul=$("sg-"+id),items=[],idx=-1,timer=null,ctl=null;
+  function close(){ul.hidden=true;idx=-1;inp.setAttribute("aria-expanded","false")}
+  function mark(){Array.prototype.forEach.call(ul.children,function(li,i){li.setAttribute("aria-selected",i===idx)})}
+  function draw(){
+    ul.innerHTML=items.map(function(it,i){return '<li role="option" data-i="'+i+'" aria-selected="false"><b>'+esc(it.name)+'</b><small>'+esc(it.sub)+'</small></li>'}).join("");
+    ul.hidden=!items.length;inp.setAttribute("aria-expanded",String(!!items.length));idx=-1;
+  }
+  function choose(i){
+    var it=items[i];if(!it)return;
+    inp.value=it.name;picks[id]={lat:it.lat,lon:it.lon};close();
+    if(id==="to"&&$("from").value.trim())$("go").click();
+  }
+  async function search(q){
+    if(ctl)ctl.abort();ctl=new AbortController();
+    var b=picks.from||here||MANILA;
+    try{
+      var r=await fetch("https://photon.komoot.io/api/?limit=6&lang=en&bbox=116.9,4.5,126.7,21.3&lat="+b.lat+"&lon="+b.lon+"&q="+encodeURIComponent(q),{signal:ctl.signal});
+      if(!r.ok)return close();
+      var d=await r.json(),seen={};
+      items=d.features.map(function(f){
+        var p=f.properties,name=p.name||[p.housenumber,p.street].filter(Boolean).join(" ");
+        var sub=[p.street&&p.street!==name?p.street:"",p.district||p.locality,p.city||p.county,p.state].filter(function(x,i,a){return x&&a.indexOf(x)===i}).join(", ");
+        return {name:name,sub:sub,lon:f.geometry.coordinates[0],lat:f.geometry.coordinates[1]};
+      }).filter(function(it){var k=it.name+"|"+it.sub;if(!it.name||seen[k])return false;seen[k]=1;return true});
+      draw();
+    }catch(e){if(e.name!=="AbortError")close()}
+  }
+  inp.addEventListener("input",function(){
+    picks[id]=null;clearTimeout(timer);
+    var q=inp.value.trim();
+    if(q.length<3||q==="My location"||!navigator.onLine){if(ctl)ctl.abort();return close()}
+    timer=setTimeout(function(){search(q)},350);
+  });
+  inp.addEventListener("keydown",function(e){
+    if(ul.hidden)return;
+    if(e.key==="ArrowDown"){e.preventDefault();idx=(idx+1)%items.length;mark()}
+    else if(e.key==="ArrowUp"){e.preventDefault();idx=(idx-1+items.length)%items.length;mark()}
+    else if(e.key==="Enter"&&idx>=0){e.preventDefault();choose(idx)}
+    else if(e.key==="Escape")close();
+  });
+  inp.addEventListener("blur",function(){setTimeout(close,150)});
+  ul.addEventListener("pointerdown",function(e){var li=e.target.closest("li");if(!li)return;e.preventDefault();choose(+li.dataset.i)});
+}
+suggest("from");suggest("to");
+if("serviceWorker" in navigator)window.addEventListener("load",function(){navigator.serviceWorker.register("./sw.js").catch(function(){})});
+render();renderHist();
+})();
+</script>
+</body>
+</html>
